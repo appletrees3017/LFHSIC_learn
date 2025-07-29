@@ -91,7 +91,7 @@ def load_3dshapes(batch_size,fixed_factor,fixed_factor_value):
     x_ims=ims/255 #标准化 转换到[0,1] (RGB最后通道255)
     x_ims=ims.astype(np.float32)
     
-    return ims.reshape(batch_size,64,64,3),y_orien.reshape(batch_size,6)  #显示保证输出形状
+    return ims.reshape(batch_size,64,64,3),y_orien.reshape(batch_size,1)  #显示保证输出形状
     
 RANDOM_SEED  42 
 
