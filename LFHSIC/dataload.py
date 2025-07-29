@@ -75,22 +75,23 @@ def load_3dshapes(batch_size,fixed_factor,fixed_factor_value):
     factors[fixed_fator]=fixed_factor
     
     indices=get_index(factors)
-
-    factors=factors.T
-    factors=torch.tensor(factors).
     
-    ims=[]
+    factors=factors.T
+    y_orien=factors['orientation']
+    y-orien=torch.tensor(y_orien).
+    
+    x_ims=[]
     
     for ind in indices:
         im=images[ind]
         im=np.asarray(im)
-        ims.append(im)
+        x_ims.append(im)
         
-    ims=np.stack(ims,axis=0)
-    ims=ims/255 #标准化 转换到[0,1] (RGB最后通道255)
-    ims=ims.astype(np.float32)
+    x_ims=np.stack(ims,axis=0)
+    x_ims=ims/255 #标准化 转换到[0,1] (RGB最后通道255)
+    x_ims=ims.astype(np.float32)
     
-    return ims.reshape(batch_size,64,64,3),factor.reshape(batch_size,6)  #显示保证输出形状
+    return ims.reshape(batch_size,64,64,3),y_orien.reshape(batch_size,6)  #显示保证输出形状
     
 RANDOM_SEED  42 
 
