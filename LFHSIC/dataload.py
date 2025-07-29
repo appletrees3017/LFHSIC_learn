@@ -1,6 +1,8 @@
 # dataload.py
 import os
 import numpy as np
+import panda as pd
+import torch
 import h5py
 from sklearn.preprocessing import StandardScaler
 
@@ -20,62 +22,128 @@ def get_data_path():
 
 DATA_ROOT = get_data_path()
 
-def load_3dshapes(sample_size=None):
-    """
-    加载3DShapes数据集（来自DeepMind）
-    sample_size: 可选，用于测试的小样本大小
-    """
+#计算索引---3Dshape数据集处理工具
+def get_index(factors):
+    indices=0
+    base=1
+    for factor,name in reversed(list(enumerate(FACTORS_IN_ORDER))):
+        indices+=factors[factor]*base
+        base*=NUM_VALUES_PER_FACTOR[name]
+    return indices
+        
+def load_3dshapes(batch_size,fixed_factor,fixed_factor_value):
+    
     # 验证数据路径
     shape_path = os.path.join(DATA_ROOT, '3dshapes', '3dshapes.h5')
     if not os.path.exists(shape_path):
         raise FileNotFoundError(f"3Dshape数据未找到: {shape_path}. 当前工作目录: {os.getcwd()}")
+        
+    #加载数据准备 ---惰性加载
+    dataset=h5py.File('3dshape.h5',r)
+    print(dataset.keys())
+    images=dataset['images']
+    labels=dataset['labels']
     
-    with h5py.File(shape_path, 'r') as f:
-        images = f['images'][:]
-        labels = f['labels'][:]
+    #定义数据维度
+    n_samples=labels.shape[0]
+    image_shape=images.shape[1:]
+    label_shape=labels.shape[1:]
     
-    # 提取方向标签（第5列）并添加噪声
-    orientations = labels[:, 4]
-    noisy_orient = orientations + np.random.normal(0, 1, orientations.shape)
+    FACTORS_IN_ORDER=[
+        'floor_hue', #地板色相
+        'wall_hue',  #墙壁色相
+        'object_hue',#物体色相
+        'scale',#物体尺寸
+        'shape',#物体形状
+        'orientation'#观察场景
+    ]
+    NUM_VALUES_PER_FACTOR{
+         'floor_hue':10,
+        'wall_hue':10,  
+        'object_hue':10,
+        'scale':8,
+        'shape':4,
+        'orientation':15
+    #可以取值的范围
+    }
     
-    # 限制样本大小用于快速测试
-    if sample_size:
-        return images[:sample_size], noisy_orient[:sample_size]
-    return images, noisy_orient
+    factors=np.zeros([len(FACTORS_IN_ORDER),batch_size],dtype=np.int32)
+    
+    for factor,name in enumerate(FACTORS_IN_ORDER):
+        num_choice=NUM_VALUES_PER_FACTOR[name]
+        fartors[factor]=np.ranom.choice(num_choice,batch_size)
+    factors[fixed_fator]=fixed_factor
+    
+    indices=get_index(factors)
+    
+    factors=torch.tensor(factors)
+    
+    ims=[]
+    
+    for ind in indices:
+        im=images[ind]
+        im=np.asarray(im)
+        ims.append(im)
+        
+    ims=np.stack(ims,axis=0)
+    ims=ims/255 #标准化 转换到[0,1] (RGB最后通道255)
+    ims=ims.astype(np.float32)
+    
+    return ims,factor
+    
+RANDOM_SEED  42 
 
-def load_msd(sample_size=None):
-    """
-    加载百万歌曲数据集（MSD）来自UCI
-    sample_size: 可选，用于测试的小样本大小
-    """
+def load_yearprediction_msd(train_samplesn=5000,test_samplesn=1000,random_sample=True):
+    
+    #验证数据路径
     msd_path = os.path.join(DATA_ROOT, 'msd', 'YearPredictionMSD.txt')
     if not os.path.exists(msd_path):
         raise FileNotFoundError(f"MSD数据未找到: {msd_path}. 当前工作目录: {os.getcwd()}")
-    
-    # 逐块加载大文件
-    data = np.loadtxt(msd_path, delimiter=',')
-    years = data[:, 0]
-    features = data[:, 1:]
-    
-    # 添加强噪声
-    noisy_features = features + np.random.normal(0, 1000, features.shape)
-    
-    # 标准化特征
-    scaler = StandardScaler()
-    scaled_features = scaler.fit_transform(noisy_features)
-    
-    # 限制样本大小用于快速测试
-    if sample_size:
-        return scaled_features[:sample_size], years[:sample_size]
-    return scaled_features, years
 
-# 测试函数（可选）
-if __name__ == "__main__":
-    print(f"数据根目录: {DATA_ROOT}")
-    try:
-        img, orient = load_3dshapes(sample_size=10)
-        feat, year = load_msd(sample_size=10)
-        print("3DShapes测试通过:", img.shape, orient.shape)
-        print("MSD测试通过:", feat.shape, year.shape)
-    except Exception as e:
-        print(f"数据加载错误: {str(e)}")
+    #数据集官方建议划分方式
+    OFFICAL_TRAIN_SIZE=463715
+    OFFICAL_TEST_SIZE=51630
+    total_size=OFFICAL_TRAIN_SIZE+OFFICAL_TEST_SIZE
+    #采样数据大小规定
+    train_samplesn=min(train_samplesn,OFFICAL_TRAIN_SIZE)
+    test_samplesn=min(test_samplesn,OFFICAL_TEST_SIZ)
+    #定义数据类型
+    dtypes={0:np.int32}
+    for i in range(1,91):
+        dtypes[i]=np.float32
+    
+    #分批读取---整个文件读取
+    chunck_size=10000
+    chuncks=[]
+    for chunck in pd.read.csv(msd_path,header=None,dtype=dtypes,usecol=range(90),chuncksize=chunck_size):
+        chuncks.append(chunck)
+    data=pd.contat(chunck)
+    #验证数据集大小
+    if len(data)!=total_size: print(f"警告：数据集大小不匹配！预期：{total_size},实际:{len(data)}")
+    
+    #数据集分割
+    train_sample=data.iloc[0:OFFICIAL_TRAIN_SIZE]
+    test_sample=data.iloc[OFFICAL_TRAIN_SIZE:]
+
+    del data
+    
+    #抽样
+    if random_samples: #随机抽样
+        if train_samplesn<OFFICIAL_TRAIN_SIZE:
+            trainsample=train_sample.sample(n=train_samplesn,random_state=RANDOM_SEED)
+        if test_samples<OFFICIAL_TEST_SIZE:
+            testsample=test_sample.sample(n=test_samplesn,random_state=RANDOM_SEED)
+    else: #顺序抽样
+            trainsample=train_sample.iloc[:train_samplesn]
+            testsample=test_sample.iloc[:test_samplesn]
+
+    #分离特征和目标变量
+
+    X_train=trainsample[:,1:].values.astype(np.float32)
+    Y_train=trainsample[:,0].values.astype(np.flat32)
+
+    X_test=testsample[:,1:].values.astype(np.float32)
+    Y_test=testsample[:,0].values.astype(np.float32)
+    
+    return (Y_train,X_train),(Y_test,X_test)
+    
