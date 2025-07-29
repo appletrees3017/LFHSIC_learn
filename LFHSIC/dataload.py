@@ -75,8 +75,9 @@ def load_3dshapes(batch_size,fixed_factor,fixed_factor_value):
     factors[fixed_fator]=fixed_factor
     
     indices=get_index(factors)
-    
-    factors=torch.tensor(factors)
+
+    factors=factors.T
+    factors=torch.tensor(factors).
     
     ims=[]
     
@@ -89,7 +90,7 @@ def load_3dshapes(batch_size,fixed_factor,fixed_factor_value):
     ims=ims/255 #标准化 转换到[0,1] (RGB最后通道255)
     ims=ims.astype(np.float32)
     
-    return ims,factor
+    return ims.reshape(batch_size,64,64,3),factor.reshape(batch_size,6)  #显示保证输出形状
     
 RANDOM_SEED  42 
 
