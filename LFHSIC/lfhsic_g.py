@@ -114,22 +114,8 @@ class IndpTest_LFGaussian(IndpTest):
             rfx, rfy = self.rff_generate(fX, fY, unit_rff_freqx_fix, unit_rff_freqy_fix)
             rfxc = rfx - torch.mean(rfx,0)
             rfyc = rfy - torch.mean(rfy,0)
-            # 关键修复节点：处理J_maxpower_term返回值
-            res_Stat = self.J_maxpower_term(rfx, rfy, rfxc, rfyc)
-            if isinstance(res_Stat, tuple):
-            # 正常返回二元组：解包获取阈值
-            testStat, _ = res
-            else:
-            # 异常情况：返回单个值直接作为阈值
-            testStat = res  
-            # 关键修复点：处理cal_thresh_pm返回值
-            res_pm = self.cal_thresh_pm(rfx, rfy, rfxc, rfyc)
-            if isinstance(res_pm, tuple):
-            # 正常返回三元组：解包获取阈值
-            thresh, _, _ = res
-            else:
-            # 异常情况：返回单个值直接作为阈值
-            thresh = res  
+            testStat, _ = self.J_maxpower_term(rfx, rfy, rfxc, rfyc)
+            thresh, _, _ = self.cal_thresh_pm(rfx, rfy, rfxc, rfyc) 
         
         h0_rejected = (testStat>thresh)
         
