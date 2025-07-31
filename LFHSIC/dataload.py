@@ -1,7 +1,7 @@
 # dataload.py
 import os
 import numpy as np
-import panda as pd
+import pandas as pd
 import torch
 import h5py
 from sklearn.preprocessing import StandardScaler
@@ -19,37 +19,10 @@ def get_data_path():
     # 本地环境（备用）
     base_dir = os.path.dirname(os.path.abspath(__file__))
     return os.path.join(base_dir, 'data')
-
+#3dshape数据导入
+#定义成全局变量--因子的解释
 DATA_ROOT = get_data_path()
-
-#计算索引---3Dshape数据集处理工具
-def get_index(factors):
-    indices=0
-    base=1
-    for factor,name in reversed(list(enumerate(FACTORS_IN_ORDER))):
-        indices+=factors[factor]*base
-        base*=NUM_VALUES_PER_FACTOR[name]
-    return indices
-        
-def load_3dshapes(batch_size,fixed_factor,fixed_factor_value):
-    
-    # 验证数据路径
-    shape_path = os.path.join(DATA_ROOT, '3dshapes', '3dshapes.h5')
-    if not os.path.exists(shape_path):
-        raise FileNotFoundError(f"3Dshape数据未找到: {shape_path}. 当前工作目录: {os.getcwd()}")
-        
-    #加载数据准备 ---惰性加载
-    dataset=h5py.File('3dshape.h5',r)
-    print(dataset.keys())
-    images=dataset['images']
-    labels=dataset['labels']
-    
-    #定义数据维度
-    n_samples=labels.shape[0]
-    image_shape=images.shape[1:]
-    label_shape=labels.shape[1:]
-    
-    FACTORS_IN_ORDER=[
+FACTORS_IN_ORDER=[
         'floor_hue', #地板色相
         'wall_hue',  #墙壁色相
         'object_hue',#物体色相
@@ -66,19 +39,48 @@ def load_3dshapes(batch_size,fixed_factor,fixed_factor_value):
         'orientation':15
     #可以取值的范围
     }
+
+#计算索引---3Dshape数据集处理工具
+def get_index(factors):
+    indices=np.zeros(factors.shape[1], dtype=np.int32) #数组操作--把indices定义成为数组
+    base=1
+    for factor,name in reversed(list(enumerate(FACTORS_IN_ORDER))):
+        indices+=factors[factor]*base
+        base*=NUM_VALUES_PER_FACTOR[name]
+    return indices
+        
+def load_3dshapes(batch_size,fixed_factor,fixed_factor_value):
+    
+    # 验证数据路径
+    shape_path = os.path.join(DATA_ROOT, '3dshapes', '3dshapes.h5')
+    if not os.path.exists(shape_path):
+        raise FileNotFoundError(f"3Dshape数据未找到: {shape_path}. 当前工作目录: {os.getcwd()}")
+        
+    #加载数据准备 ---惰性加载
+    dataset=h5py.File(shape_path,r) #文件路径自适应
+    print(dataset.keys())
+    images=dataset['images']
+    labels=dataset['labels']
+    
+    #定义数据维度
+    n_samples=labels.shape[0]
+    image_shape=images.shape[1:]
+    label_shape=labels.shape[1:]
+
     
     factors=np.zeros([len(FACTORS_IN_ORDER),batch_size],dtype=np.int32)
     
     for factor,name in enumerate(FACTORS_IN_ORDER):
         num_choice=NUM_VALUES_PER_FACTOR[name]
-        fartors[factor]=np.ranom.choice(num_choice,batch_size)
-    factors[fixed_fator]=fixed_factor
-    
+        factors[factor] = np.random.choice(num_choice, batch_size)  
+        
+    factors[fixed_factor] = fixed_factor_value  # ‘’‘’
+
     indices=get_index(factors)
     
     factors=factors.T
     y_orien=factors['orientation']
-    y-orien=torch.tensor(y_orien).
+    y_orien=torch.tensor(y_orien)
     
     x_ims=[]
     
@@ -87,13 +89,14 @@ def load_3dshapes(batch_size,fixed_factor,fixed_factor_value):
         im=np.asarray(im)
         x_ims.append(im)
         
-    x_ims=np.stack(ims,axis=0)
+    x_ims=np.stack(x_ims,axis=0)
     x_ims=ims/255 #标准化 转换到[0,1] (RGB最后通道255)
     x_ims=ims.astype(np.float32)
     
-    return ims.reshape(batch_size,64,64,3),y_orien.reshape(batch_size,1)  #显示保证输出形状
-    
-RANDOM_SEED  42 
+    return x_ims.reshape(batch_size,64,64,3),y_orien.reshape(batch_size,1)  #显示保证输出形状
+
+#随机种子，保证实验的可重复性
+RANDOM_SEED=42 
 
 def load_yearprediction_msd(train_samplesn=5000,test_samplesn=1000,random_sample=True):
     
@@ -108,7 +111,7 @@ def load_yearprediction_msd(train_samplesn=5000,test_samplesn=1000,random_sample
     total_size=OFFICAL_TRAIN_SIZE+OFFICAL_TEST_SIZE
     #采样数据大小规定
     train_samplesn=min(train_samplesn,OFFICAL_TRAIN_SIZE)
-    test_samplesn=min(test_samplesn,OFFICAL_TEST_SIZ)
+    test_samplesn=min(test_samplesn,OFFICAL_TEST_SIZE)
     #定义数据类型
     dtypes={0:np.int32}
     for i in range(1,91):
@@ -117,9 +120,9 @@ def load_yearprediction_msd(train_samplesn=5000,test_samplesn=1000,random_sample
     #分批读取---整个文件读取
     chunck_size=10000
     chuncks=[]
-    for chunck in pd.read.csv(msd_path,header=None,dtype=dtypes,usecol=range(90),chuncksize=chunck_size):
+    for chunck in pd.read_csv(msd_path,header=None,dtype=dtypes,usecols=range(90),chuncksize=chunk_size):
         chuncks.append(chunck)
-    data=pd.contat(chunck)
+    data=pd.concat(chuncks)
     #验证数据集大小
     if len(data)!=total_size: print(f"警告：数据集大小不匹配！预期：{total_size},实际:{len(data)}")
     
@@ -130,22 +133,22 @@ def load_yearprediction_msd(train_samplesn=5000,test_samplesn=1000,random_sample
     del data
     
     #抽样
-    if random_samples: #随机抽样
+    if random_sample: #随机抽样
         if train_samplesn<OFFICIAL_TRAIN_SIZE:
-            trainsample=train_sample.sample(n=train_samplesn,random_state=RANDOM_SEED)
+            train_sample=train_sample.sample(n=train_samplesn,random_state=RANDOM_SEED)
         if test_samples<OFFICIAL_TEST_SIZE:
-            testsample=test_sample.sample(n=test_samplesn,random_state=RANDOM_SEED)
+            test_sample=test_sample.sample(n=test_samplesn,random_state=RANDOM_SEED)
     else: #顺序抽样
-            trainsample=train_sample.iloc[:train_samplesn]
-            testsample=test_sample.iloc[:test_samplesn]
+            train_sample=train_sample.iloc[:train_samplesn]
+            test_sample=test_sample.iloc[:test_samplesn]
 
     #分离特征和目标变量
 
-    X_train=trainsample[:,1:].values.astype(np.float32)
-    Y_train=trainsample[:,0].values.astype(np.flat32)
+    X_train = train_sample.iloc[:, 1:].values.astype(np.float32)  # 正确索引
+    Y_train = train_sample.iloc[:, 0].values.astype(np.float32)    # 修正数据类型
 
-    X_test=testsample[:,1:].values.astype(np.float32)
-    Y_test=testsample[:,0].values.astype(np.float32)
+    X_test = test_sample.iloc[:, 1:].values.astype(np.float32)
+    Y_test = test_sample.iloc[:, 0].values.astype(np.float32)
     
     return (Y_train,X_train),(Y_test,X_test)
     
