@@ -108,7 +108,7 @@ class IndpTest_LFMahalanobis(IndpTest):
             rfxc = rfx - torch.mean(rfx,0)
             rfyc = rfy - torch.mean(rfy,0)
             testStat, sigma = self.J_maxpower_term(rfx, rfy, rfxc, rfyc)
-            thresh, al, bet = self.cal_thresh(rfx, rfy, rfxc, rfyc)
+            thresh= self.cal_thresh(rfx, rfy, rfxc, rfyc)
         else:
             if self.device.type == "cuda":
                 fX, fY = self.feat_gen(Xte, Yte, wx, wy, weight_x.cpu(), weight_y.cpu())
