@@ -105,7 +105,7 @@ class IndpTest_LFGaussian(IndpTest):
             rfxc = rfx - torch.mean(rfx,0)
             rfyc = rfy - torch.mean(rfy,0)
             testStat, sigma = self.J_maxpower_term(rfx, rfy, rfxc, rfyc)
-            thresh, al, bet = self.cal_thresh(rfx, rfy, rfxc, rfyc)
+            thresh= self.cal_thresh(rfx, rfy, rfxc, rfyc)
         else:
             if self.device.type == "cuda":
                 unit_rff_freqx_fix = unit_rff_freqx_fix.cpu()
@@ -115,7 +115,7 @@ class IndpTest_LFGaussian(IndpTest):
             rfxc = rfx - torch.mean(rfx,0)
             rfyc = rfy - torch.mean(rfy,0)
             testStat, sigma = self.J_maxpower_term(rfx, rfy, rfxc, rfyc)
-            thresh, al, bet = self.cal_thresh_pm(rfx, rfy, rfxc, rfyc) 
+            thresh= self.cal_thresh_pm(rfx, rfy, rfxc, rfyc) 
         
         h0_rejected = (testStat>thresh)
         
