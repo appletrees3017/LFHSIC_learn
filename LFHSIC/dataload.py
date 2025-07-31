@@ -57,7 +57,7 @@ def load_3dshapes(batch_size,fixed_factor,fixed_factor_value):
         'shape',#物体形状
         'orientation'#观察场景
     ]
-    NUM_VALUES_PER_FACTOR{
+    NUM_VALUES_PER_FACTOR={
          'floor_hue':10,
         'wall_hue':10,  
         'object_hue':10,
