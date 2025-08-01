@@ -79,7 +79,9 @@ def load_3dshapes(batch_size,fixed_factor,fixed_factor_value):
     indices=get_index(factors)
     
     factors=factors.T
-    y_orien=factors['orientation']
+    #y_orien=factors['orientation']
+    orient_idx = FACTORS_IN_ORDER.index('orientation')  # 获取索引位置
+    y_orien = factors[:, orient_idx]                   # 正确切片
     y_orien=torch.tensor(y_orien)
     
     x_ims=[]
@@ -90,8 +92,9 @@ def load_3dshapes(batch_size,fixed_factor,fixed_factor_value):
         x_ims.append(im)
         
     x_ims=np.stack(x_ims,axis=0)
-    x_ims=ims/255 #标准化 转换到[0,1] (RGB最后通道255)
-    x_ims=ims.astype(np.float32)
+    x_ims=x_ims/255.0 #标准化 转换到[0,1] (RGB最后通道255)
+    x_ims=x_ims.astype(np.float32)
+    x_ims = torch.tensor(x_ims)
     
     return x_ims.reshape(batch_size,64,64,3),y_orien.reshape(batch_size,1)  #显示保证输出形状
 
@@ -106,28 +109,28 @@ def load_yearprediction_msd(train_samplesn=5000,test_samplesn=1000,random_sample
         raise FileNotFoundError(f"MSD数据未找到: {msd_path}. 当前工作目录: {os.getcwd()}")
 
     #数据集官方建议划分方式
-    OFFICAL_TRAIN_SIZE=463715
-    OFFICAL_TEST_SIZE=51630
+    OFFICIAL_TRAIN_SIZE=463715
+    OFFICIAL_TEST_SIZE=51630
     total_size=OFFICAL_TRAIN_SIZE+OFFICAL_TEST_SIZE
     #采样数据大小规定
-    train_samplesn=min(train_samplesn,OFFICAL_TRAIN_SIZE)
-    test_samplesn=min(test_samplesn,OFFICAL_TEST_SIZE)
+    train_samplesn=min(train_samplesn,OFFICIAL_TRAIN_SIZE)
+    test_samplesn=min(test_samplesn,OFFICIAL_TEST_SIZE)
     #定义数据类型
     dtypes={0:np.int32}
     for i in range(1,91):
         dtypes[i]=np.float32
     
     #分批读取---整个文件读取
-    chunck_size=10000
-    chuncks=[]
-    for chunck in pd.read_csv(msd_path,header=None,dtype=dtypes,usecols=range(90),chuncksize=chunk_size):
-        chuncks.append(chunck)
-    data=pd.concat(chuncks)
+    chunk_size=10000
+    chunks=[]
+    for chunk in pd.read_csv(msd_path,header=None,dtype=dtypes,usecols=range(90),chunksize=chunk_size):
+        chunks.append(chunk)
+    data=pd.concat(chunks)
     #验证数据集大小
     if len(data)!=total_size: print(f"警告：数据集大小不匹配！预期：{total_size},实际:{len(data)}")
     
     #数据集分割
-    train_sample=data.iloc[0:OFFICIAL_TRAIN_SIZE]
+    train_sample=data.iloc[:OFFICIAL_TRAIN_SIZE]
     test_sample=data.iloc[OFFICAL_TRAIN_SIZE:]
 
     del data
@@ -136,7 +139,7 @@ def load_yearprediction_msd(train_samplesn=5000,test_samplesn=1000,random_sample
     if random_sample: #随机抽样
         if train_samplesn<OFFICIAL_TRAIN_SIZE:
             train_sample=train_sample.sample(n=train_samplesn,random_state=RANDOM_SEED)
-        if test_samples<OFFICIAL_TEST_SIZE:
+        if test_samplesn<OFFICIAL_TEST_SIZE:
             test_sample=test_sample.sample(n=test_samplesn,random_state=RANDOM_SEED)
     else: #顺序抽样
             train_sample=train_sample.iloc[:train_samplesn]
@@ -145,10 +148,10 @@ def load_yearprediction_msd(train_samplesn=5000,test_samplesn=1000,random_sample
     #分离特征和目标变量
 
     X_train = train_sample.iloc[:, 1:].values.astype(np.float32)  # 正确索引
-    Y_train = train_sample.iloc[:, 0].values.astype(np.float32)    # 修正数据类型
+    Y_train = train_sample.iloc[:, 0].values.astype(np.int32)    # 修正数据类型
 
     X_test = test_sample.iloc[:, 1:].values.astype(np.float32)
-    Y_test = test_sample.iloc[:, 0].values.astype(np.float32)
+    Y_test = test_sample.iloc[:, 0].values.astype(np.int32)
     
     return (Y_train,X_train),(Y_test,X_test)
     
