@@ -14,7 +14,7 @@ def get_data_path():
         if os.path.exists('/content/LFHSIC_learn/LFHSIC/data'):
             return '/content/LFHSIC_learn/LFHSIC/data'
         # 备选路径（如果符号链接未正确创建）
-        return '/content/drive/MyDrive/Colab_experiments/nips_lfhsic_code_data/data'
+        return '/content/drive/MyDrive/Colab_experiments/nips_lfhsic_code_data/'
     
     # 本地环境（备用）
     base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -101,7 +101,7 @@ RANDOM_SEED=42
 def load_yearprediction_msd(train_samplesn=5000,test_samplesn=1000,random_sample=True):
     
     #验证数据路径
-    msd_path = os.path.join(DATA_ROOT, 'msd', 'YearPredictionMSD.txt')
+    msd_path = os.path.join(DATA_ROOT, 'msd', 'YearPredictionMSD.csv')
     if not os.path.exists(msd_path):
         raise FileNotFoundError(f"MSD数据未找到: {msd_path}. 当前工作目录: {os.getcwd()}")
 
