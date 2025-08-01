@@ -111,7 +111,7 @@ def load_yearprediction_msd(train_samplesn=5000,test_samplesn=1000,random_sample
     #数据集官方建议划分方式
     OFFICIAL_TRAIN_SIZE=463715
     OFFICIAL_TEST_SIZE=51630
-    total_size=OFFICAL_TRAIN_SIZE+OFFICAL_TEST_SIZE
+    total_size=OFFICIAL_TRAIN_SIZE+OFFICIAL_TEST_SIZE
     #采样数据大小规定
     train_samplesn=min(train_samplesn,OFFICIAL_TRAIN_SIZE)
     test_samplesn=min(test_samplesn,OFFICIAL_TEST_SIZE)
