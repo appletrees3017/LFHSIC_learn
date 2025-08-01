@@ -57,7 +57,7 @@ def load_3dshapes(batch_size,fixed_factor,fixed_factor_value):
         raise FileNotFoundError(f"3Dshape数据未找到: {shape_path}. 当前工作目录: {os.getcwd()}")
         
     #加载数据准备 ---惰性加载
-    dataset=h5py.File(shape_path,r) #文件路径自适应
+    dataset=h5py.File(shape_path,'r') #文件路径自适应
     print(dataset.keys())
     images=dataset['images']
     labels=dataset['labels']
