@@ -131,7 +131,7 @@ def load_yearprediction_msd(train_samplesn=5000,test_samplesn=1000,random_sample
     
     #数据集分割
     train_sample=data.iloc[:OFFICIAL_TRAIN_SIZE]
-    test_sample=data.iloc[OFFICAL_TRAIN_SIZE:]
+    test_sample=data.iloc[OFFICIAL_TRAIN_SIZE:]
 
     del data
     
