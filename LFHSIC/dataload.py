@@ -99,8 +99,21 @@ def load_3dshapes(batch_size,fixed_factor,fixed_factor_value):
     return x_ims.reshape(batch_size,64,64,3),y_orien.reshape(batch_size,1)  #显示保证输出形状
 
 #随机种子，保证实验的可重复性
-RANDOM_SEED=42 
-
+#RANDOM_SEED=42 
+#添加数据检查
+    def check_data_consistency(data, name):
+        if np.all(data == data[0]):  # 检查所有行是否与第一行相同
+            raise ValueError(f"所有{name}数据点完全相同！")
+        # 检查特征方差
+        feature_vars = np.var(data, axis=0)
+        if np.any(feature_vars < 1e-9):  # 几乎无变化的特征
+            print(f"警告: {name}中存在低方差特征: {np.where(feature_vars < 1e-9)[0]}")
+    
+    # 应用检查
+    print("数据分布分析:")
+    print(f" 训练集: {X_train.shape[0]}个样本, {X_train.shape[1]}个特征")
+    print(f" 测试集: {X_test.shape[0]}个样本, {X_test.shape[1]}个特征")
+      
 def load_yearprediction_msd(train_samplesn=5000,test_samplesn=1000,random_sample=True):
     
     #验证数据路径
@@ -138,9 +151,9 @@ def load_yearprediction_msd(train_samplesn=5000,test_samplesn=1000,random_sample
     #抽样
     if random_sample: #随机抽样
         if train_samplesn<OFFICIAL_TRAIN_SIZE:
-            train_sample=train_sample.sample(n=train_samplesn,random_state=RANDOM_SEED)
+            train_sample=train_sample.sample(n=train_samplesn)
         if test_samplesn<OFFICIAL_TEST_SIZE:
-            test_sample=test_sample.sample(n=test_samplesn,random_state=RANDOM_SEED)
+            test_sample=test_sample.sample(n=test_samplesn)
     else: #顺序抽样
             train_sample=train_sample.iloc[:train_samplesn]
             test_sample=test_sample.iloc[:test_samplesn]
@@ -152,6 +165,9 @@ def load_yearprediction_msd(train_samplesn=5000,test_samplesn=1000,random_sample
 
     X_test = test_sample.iloc[:, 1:].values.astype(np.float32)
     Y_test = test_sample.iloc[:, 0].values.astype(np.int32)
+    
+    check_data_consistency(X_train[:min(1000, len(X_train))], "训练集")
+    check_data_consistency(X_test[:min(1000, len(X_test))], "测试集")
     
     return (Y_train,X_train),(Y_test,X_test)
     
