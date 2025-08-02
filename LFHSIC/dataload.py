@@ -147,7 +147,8 @@ def load_yearprediction_msd(train_samplesn=5000,test_samplesn=1000,random_sample
     
     #抽样--分层随机抽样
     if train_samplesn < OFFICIAL_TRAIN_SIZE:
-        train_sample = train_sample.groupby(0).apply(lambda x: x.sample(min(len(x), max(1, train_samplesn//len(train_sample[0].unique()))),random_state=RANDOM_SEED).reset_index(drop=True)
+        train_sample = train_sample.groupby(0).apply(
+                    lambda x: x.sample(min(len(x), max(1, train_samplesn//len(train_sample[0].unique()))),random_state=RANDOM_SEED).reset_index(drop=True)
     else: #顺序抽样
             train_sample=train_sample.iloc[:train_samplesn]
             test_sample=test_sample.iloc[:test_samplesn]
