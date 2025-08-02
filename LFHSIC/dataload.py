@@ -82,7 +82,7 @@ def load_3dshapes(batch_size,fixed_factor,fixed_factor_value):
     #y_orien=factors['orientation']
     orient_idx = FACTORS_IN_ORDER.index('orientation')  # 获取索引位置
     y_orien = factors[:, orient_idx]                   # 正确切片
-    y_orien=torch.tensor(y_orien)
+    #y_orien=torch.tensor(y_orien)
     
     x_ims=[]
     
@@ -91,10 +91,10 @@ def load_3dshapes(batch_size,fixed_factor,fixed_factor_value):
         im=np.asarray(im)
         x_ims.append(im)
         
-    x_ims=np.stack(x_ims,axis=0)
+    x_ims=np.stack(x_ims,axis=0) #数组堆叠--组成多维数组
     x_ims=x_ims/255.0 #标准化 转换到[0,1] (RGB最后通道255)
     x_ims=x_ims.astype(np.float32)
-    x_ims = torch.tensor(x_ims)
+    #x_ims = torch.tensor(x_ims)
     
     return x_ims.reshape(batch_size,64,64,3),y_orien.reshape(batch_size,1)  #显示保证输出形状
 
