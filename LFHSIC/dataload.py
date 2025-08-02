@@ -109,10 +109,7 @@ def load_3dshapes(batch_size,fixed_factor,fixed_factor_value):
         if np.any(feature_vars < 1e-9):  # 几乎无变化的特征
             print(f"警告: {name}中存在低方差特征: {np.where(feature_vars < 1e-9)[0]}")
     
-    # 应用检查
-    print("数据分布分析:")
-    print(f" 训练集: {X_train.shape[0]}个样本, {X_train.shape[1]}个特征")
-    print(f" 测试集: {X_test.shape[0]}个样本, {X_test.shape[1]}个特征")
+    
       
 def load_yearprediction_msd(train_samplesn=5000,test_samplesn=1000,random_sample=True):
     
@@ -166,6 +163,10 @@ def load_yearprediction_msd(train_samplesn=5000,test_samplesn=1000,random_sample
     X_test = test_sample.iloc[:, 1:].values.astype(np.float32)
     Y_test = test_sample.iloc[:, 0].values.astype(np.int32)
     
+    # 应用检查
+    print("数据分布分析:")
+    print(f" 训练集: {X_train.shape[0]}个样本, {X_train.shape[1]}个特征")
+    print(f" 测试集: {X_test.shape[0]}个样本, {X_test.shape[1]}个特征")
     check_data_consistency(X_train[:min(1000, len(X_train))], "训练集")
     check_data_consistency(X_test[:min(1000, len(X_test))], "测试集")
     
