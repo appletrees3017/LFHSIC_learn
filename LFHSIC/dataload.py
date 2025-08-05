@@ -229,5 +229,88 @@ def load_ypmsd_stratified(bin_size=10, seed=42, train_samplesn=5000, test_sample
     elapsed = time.time() - start_time
     print(f"总耗时：{elapsed:.2f}秒")  # 修正f-string
     return (Y_train, X_train), (Y_test, X_test)
+
+
+def load_ypmsd(bin_size=10, seed=42, train_samplesn=5000, test_samplesn=1000):
+    msd_path = os.path.join(DATA_ROOT, 'msd', 'YearPredictionMSD.csv')
+    if not os.path.exists(msd_path):
+        raise FileNotFoundError(f"MSD数据集未找到: {msd_path}, 当前工作目录: {os.getcwd()}")
+    
+    start_time = time.time()
+    # 官方数据建议划分
+    OFFICIAL_TRAIN_SIZE = 463715
+    OFFICIAL_TEST_SIZE = 51630
+    TOTAL_SIZE = OFFICIAL_TRAIN_SIZE + OFFICIAL_TEST_SIZE
+    
+    # 随机种子
+    random.seed(seed)
+    np.random.seed(seed)
+    
+    # 初始分箱数据
+    bins = list(range(1920, 2020, bin_size))
+    if 2020 not in bins:
+        bins.append(2020)
+        
+    # 按分箱组织索引
+    samples_bins = defaultdict(list)
+    
+    # 遍历整个文件，建立年份索引
+    with open(msd_path, 'r') as f:
+        for line_idx, line in enumerate(f):
+            year = int(float(line.split(',')[0]))
+            bin_idx = bisect.bisect_left(bins, year) - 1
+            if bin_idx < 0:
+                bin_idx = 0
+            elif bin_idx > len(bins) - 1:
+                bin_idx = len(bins) - 2
+                
+            bin_key = f"{bins[bin_idx]}---{bins[bin_idx+1]}"
+            samples_bins[bin_key].append(line_idx)
+            
+    print("\n样本年份分布统计：")
+    for bin_key in sorted(samples_bins.keys()):  # 修复变量名
+        print(f"分箱 {bin_key}: {len(samples_bins[bin_key])} 个样本")
+    
+    # 计算分箱抽样样本量
+    samples_per_bin = calculate_samples_per_bin(samples_bins, train_samplesn+test_samplesn)
+    
+    # 分层抽样    
+    all_indices = []
+    for bin_key, count in samples_per_bin.items():
+        selected = random.sample(samples_bins[bin_key], count)
+        all_indices.extend(selected)  # 修复拼写
+    
+    all_indices.sort()
+    max_index = all_indices[-1]
+    
+    # 高效读取选中行（使用集合提高查找效率）
+    sampled_data = []
+    selected_set = set(all_indices)
+    with open(msd_path, 'r') as f:
+        for line_idx, line in enumerate(f):
+            if line_idx > max_index:
+                break    
+            if line_idx in selected_set:
+                data = list(map(float, line.strip().split(',')))
+                sampled_data.append(data)
+    
+    # 转换成数组并划分数据集
+    for it in range(100):
+        
+        sampled_array = np.array(sampled_data, dtype=np.float32)
+        rand_index = np.random.permutation(len(sampled_array))
+        train_array = sampled_array[rand_index[:train_samplesn]]
+        test_array = sampled_array[rand_index[train_samplesn:train_samplesn+test_samplesn]]
+    
+    # 分离特征和年份
+    X_train = train_array[:, 1:]
+    X_test = test_array[:, 1:]
+    Y_train = train_array[:, 0].astype(np.int32)
+    Y_test = test_array[:, 0].astype(np.int32)
+    
+    # 结束时间
+    elapsed = time.time() - start_time
+    print(f"总耗时：{elapsed:.2f}秒")
+    return (Y_train, X_train), (Y_test, X_test)
     
         
