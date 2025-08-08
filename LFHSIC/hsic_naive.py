@@ -7,7 +7,7 @@ import torch.optim as optim
 import scipy
 import scipy.stats as stats
 from scipy.stats import gamma
-from Test.kernels import rbf_kernel, laplace_kernel, kernel_midwidth_rbf, kernel_midwidth_lap
+from LFHSIC.kernels import rbf_kernel, laplace_kernel, kernel_midwidth_rbf, kernel_midwidth_lap
 
 """
 Module containing statistical independence tests with fixed kernels.
