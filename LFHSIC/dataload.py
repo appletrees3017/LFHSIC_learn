@@ -58,9 +58,9 @@ def get_index(factors):
     # 预先计算各维度的步长（每个因子变化的基值）
     strides = []
     product = 1
-    for factor_name in reversed(_FACTORS_IN_ORDER):
+    for factor_name in reversed(FACTORS_IN_ORDER):
         strides.insert(0, product)
-        product *= _NUM_VALUES_PER_FACTOR[factor_name]
+        product *= NUM_VALUES_PER_FACTOR[factor_name]
     strides = np.array(strides, dtype=np.int64)
     
     # 使用向量化操作替代循环加速计算
