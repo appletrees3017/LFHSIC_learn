@@ -85,7 +85,7 @@ def load_3dshapes(batch_size, fixed_factor, fixed_factor_value):
     
     indices = get_index(factors)
    
-    x_ims = [images[int(ind)] for ind in indices]
+    images_list = [images[int(ind)] for ind in indices]
     #x_ims = images[indices] #问题II：h5中索引必须是递增的
     #x_ims = np.stack(x_ims, axis=0) images[indices]直接得到目标形状(batch_size,64,64,3) 问题I：未能保持维度 for循环中 stack组织维度不正确。
     
