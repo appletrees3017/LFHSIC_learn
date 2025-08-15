@@ -74,30 +74,29 @@ def load_3dshapes(batch_size, fixed_factor, fixed_factor_value):
     
     factors = np.zeros([len(FACTORS_IN_ORDER), batch_size], dtype=np.int32)
     
-    for factor, name in enumerate(FACTORS_IN_ORDER):
-        num_choice = NUM_VALUES_PER_FACTOR[name]
-        factors[factor] = np.random.choice(num_choice, batch_size)  
-        
-    factors[fixed_factor] = fixed_factor_value
+    # 为每个因子赋值
+    for i, name in enumerate(FACTORS_IN_ORDER):
+        n_vals = NUM_VALUES_PER_FACTOR[name]
+        # 固定因子特殊处理
+        if i == fixed_factor:
+            factors[i] = np.full(batch_size, fixed_factor_value)
+        else:
+            factors[i] = np.random.choice(n_vals, batch_size)
+    
     indices = get_index(factors)
+
+    x_ims = images[indices] #x_ims = np.stack(x_ims, axis=0) images[indices]直接得到目标形状(batch_size,64,64,3)
+    x_ims = x_ims / 255.0
+    x_ims = x_ims.astype(np.float32)
     
     factors = factors.T
     orient_idx = FACTORS_IN_ORDER.index('orientation')
     y_orien = factors[:, orient_idx]
-    
-    x_ims = []
-    for ind in indices:
-        im = images[ind]
-        im = np.asarray(im)
-        x_ims.append(im)
-        
-    x_ims = np.stack(x_ims, axis=0)
-    x_ims = x_ims / 255.0
-    x_ims = x_ims.astype(np.float32)
-    
+   
     elapsed = time.time() - start_time
     print(f"总耗时：{elapsed:.2f}秒")  # 修正f-string
-    return x_ims.reshape(batch_size, 64, 64, 3), y_orien.reshape(batch_size, 1)
+    # return x_ims.reshape(batch_size, 64, 64, 3), y_orien.reshape(batch_size, 1) 重复reshape会导致顺序错乱
+    return x_ims, y_orien
 
 def calculate_samples_per_bin(bin_data, total_samples):
     bin_counts = {key: len(indices) for key, indices in bin_data.items()}
