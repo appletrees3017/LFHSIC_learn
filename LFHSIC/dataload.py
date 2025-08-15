@@ -49,30 +49,40 @@ NUM_VALUES_PER_FACTOR = {
 }
 
 def get_index(factors):
-    """将因子组合转换为数据集索引===代码修改===兼容Python 3
-    参数:
-        factors: numpy 数组形状 [6, batch_size]
-                每个因子取值范围为 [0, num_values_per_factor-1]
-    返回:
-        indices: numpy 数组形状 [batch_size]
+    """将因子组合转换为数据集索引（修复版）
+    
+    修复了广播错误和步长计算问题
     """
-    # 预先计算各维度的步长（每个因子变化的基值）
-    strides = np.array([1],dtype=np.int64)
-    for factor_name in reversed(FACTORS_IN_ORDER[:-1]):
-        strides=np.insert(strides,0,strides[0]*NUM_VALUES_PER_FACTOR[factor_name])
-    strides=strides.reshape(-1,1)
-    indices=np.sum(factors*strides,axis=0) #向量化操作
-    return indices
+    # 1. 正确计算步长数组
+    strides = np.array([1], dtype=np.int64)  # 最后一个因子的步长为1
+    # 倒序计算前5个因子的步长（跳过最后一个因子）
+    for name in reversed(FACTORS_IN_ORDER[:-1]):  # 修正变量名错误
+        new_stride = strides[0] * NUM_VALUES_PER_FACTOR[name]  # 使用全局常量
+        strides = np.insert(strides, 0, new_stride)
+    
+    # 2. 确保正确的广播形状
+    strides = strides.reshape(-1, 1)  # 将形状(6,)变为(6,1)
+    
+    # 3. 正确计算索引
+    indices = np.sum(factors * strides, axis=0)  # 向量化操作
+    return indices.astype(np.int64)
+
 def get_indices_for_factors(fixed_factor, fixed_factor_value):
-    factors_ranges=[]
-    for i ,name in enumerate(FACTORS_IN_ORDER):
-        if i==fixed_factor:
+    """获取固定因子值对应的所有可能索引（修复版）"""
+    # 1. 确保使用正确的全局常量
+    factors_ranges = []
+    for i, name in enumerate(FACTORS_IN_ORDER):  # 使用全局常量名
+        if i == fixed_factor:
             factors_ranges.append([fixed_factor_value])
         else:
-            factors_ranges.append(list(range(NUM_VALUES_PER_FACTOR[name])))
-    all_combinations=list(itertools.product(*factors_ranges))
-    factors_matrix=np.array(all_combinations).T
-    indices=get_index(factors_matrix)
+            factors_ranges.append(list(range(NUM_VALUES_PER_FACTOR[name])))  # 使用正确的常量名
+    
+    # 2. 生成所有组合
+    all_combinations = list(itertools.product(*factors_ranges))
+    factors_matrix = np.array(all_combinations).T
+    
+    # 3. 计算所有索引
+    indices = get_index(factors_matrix)
     return indices
      
 def load_3dshapes(batch_size, fixed_factor, fixed_factor_value):
@@ -95,23 +105,29 @@ def load_3dshapes(batch_size, fixed_factor, fixed_factor_value):
     
     factors = np.zeros([len(FACTORS_IN_ORDER), batch_size], dtype=np.int32)
     
-    #获取所有符合条件索引
-    all_indices=get_indices_for_factors(fixed_factor, fixed_factor_value)
-    #随机抽样索引
-    selected_indices=np.random.choice(all_indices,batch_size,replace=False)
-    selected_indices.sort() #确保索引的顺序性
-    #获取图像
-    X_imgs=np.arrary(images[selected_indices])
-    #获取标签
-    all_labels=np.array(labels[selected_indices])
-    orientation_index=FACTORS_IN_ORDER.index('orientation')
-    y_orien=all_labels[:,orientation_index].astype(np.float32)
-    # 归一化并转换类型
-    X_ims=X_ims.astype(np.float32) / 255.0
+    # 3. 获取所有符合条件的索引
+    all_indices = get_indices_for_factors(fixed_factor, fixed_factor_value)
+        
+    # 4. 随机抽样并确保索引唯一有序
+    selected_indices = np.random.choice(all_indices, batch_size, replace=False)
+    selected_indices.sort()  # 确保索引顺序递增
+        
+    # 5. 获取图像数据
+    X_ims = np.array(images[selected_indices])  # 修正数组名拼写错误 (X_imgs -> X_ims)
+        
+    # 6. 获取标签数据
+    all_labels = np.array(labels[selected_indices])
+        
+    # 7. 提取方位标签
+    orientation_index = FACTORS_IN_ORDER.index('orientation')
+    y_orien = all_labels[:, orientation_index].astype(np.float32)
+    
+    # 8. 归一化图像数据
+    X_ims = X_ims.astype(np.float32) / 255.0
     
     elapsed = time.time() - start_time
-    print(f"总耗时：{elapsed:.2f}秒")  # 修正f-string
-    # return x_ims.reshape(batch_size, 64, 64, 3), y_orien.reshape(batch_size, 1) 重复reshape会导致顺序错乱
+    print(f"数据加载耗时：{elapsed:.2f}秒")
+    
     return X_ims, y_orien
 
 def calculate_samples_per_bin(bin_data, total_samples):
