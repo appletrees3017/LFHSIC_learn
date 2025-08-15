@@ -88,6 +88,12 @@ def load_3dshapes(batch_size, fixed_factor, fixed_factor_value):
     x_ims = [images[int(ind)] for ind in indices]
     #x_ims = images[indices] #问题II：h5中索引必须是递增的
     #x_ims = np.stack(x_ims, axis=0) images[indices]直接得到目标形状(batch_size,64,64,3) 问题I：未能保持维度 for循环中 stack组织维度不正确。
+    x_ims = np.stack(x_ims, axis=0)
+
+    # 添加类型转换和验证====修复输出类型
+    if not isinstance(x_ims, np.ndarray):
+        print(f"警告：x_ims 应为 NumPy 数组，实际是 {type(x_ims)}")
+        x_ims = np.array(x_ims)  # 强制转换为数组
     
     x_ims = x_ims / 255.0
     x_ims = x_ims.astype(np.float32)
