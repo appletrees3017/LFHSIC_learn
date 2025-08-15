@@ -56,16 +56,24 @@ def get_index(factors):
         indices: numpy 数组形状 [batch_size]
     """
     # 预先计算各维度的步长（每个因子变化的基值）
-    strides = []
-    product = 1
-    for factor_name in reversed(FACTORS_IN_ORDER):
-        strides.insert(0, product)
-        product *= NUM_VALUES_PER_FACTOR[factor_name]
-    strides = np.array(strides, dtype=np.int64)
-    
-    # 使用向量化操作替代循环加速计算
-    indices = np.sum(factors * strides[:, np.newaxis], axis=0)
-    return indices     
+    strides = np.arrary([1],dtype=np.int64)
+    for factor_name in reversed(FACTORS_IN_ORDER[:-1]):
+        strides=np.insert(strides,0,strides[0]*NUM_VALUES_PER_FACTOR[name])
+    strides.reshape(-1,1)
+    indices=np.sum(factors*stridies,axis=0) #向量化操作
+    return indices
+def get_indices_for_factors(fixed_factor, fixed_factor_value):
+    factor_ranges=[]
+    for i ,name in enumerate(FACTORS_IN_ORDER):
+        if i==fixed_factor:
+            factors_ranges.append([fixed_factor_value])
+        else:
+            factor_ranges.append(list(range(NUM_VALUES_PER_FACTOR[name])))
+    all_combinations=list(itertools.prouduct(*factor_ranges))
+    factors_matrix=np.array(al_combinations).T
+    indices=get_index(factors)
+    return indices
+     
 def load_3dshapes(batch_size, fixed_factor, fixed_factor_value):
     # 验证数据路径
     shape_path = os.path.join(DATA_ROOT, '3dshapes', '3dshapes.h5')
@@ -86,33 +94,24 @@ def load_3dshapes(batch_size, fixed_factor, fixed_factor_value):
     
     factors = np.zeros([len(FACTORS_IN_ORDER), batch_size], dtype=np.int32)
     
-     # 为非固定因子生成随机值
-    for factor_idx, name in enumerate(FACTORS_IN_ORDER):
-        if factor_idx != fixed_factor:
-            factors[factor_idx] = np.random.choice(NUM_VALUES_PER_FACTOR[name], batch_size)
-    
-    # 设置固定因子的值
-    factors[fixed_factor] = fixed_factor_value
-    
-    # 计算索引并获取图像
-    indices = get_index(factors)
-
-    
-    # 计算索引后添加排序操作
-    sorted_indices = np.sort(indices)
-    x_ims = images[sorted_indices] #x_ims = np.array(images[indices])  # 转换为数组确保兼容性
-    
+    #获取所有符合条件索引
+    all_indices=get_indices_for_factors
+    #随机抽样索引
+    selected_indices=np.random.choice(all_indices,batch_size,replace=False)
+    selected_indices.sort() #确保索引的顺序性
+    #获取图像
+    X_imgs=np.arrary(images[selected_indices])
+    #获取标签
+    all_labels=np.array(labels[selected_indices])
+    orientation_index=FACTORS_IN_ORDER.index('orientation')
+    y_oiren=all_labels[:,orientation_index].astype(np.float32)
     # 归一化并转换类型
-    x_ims.astype(np.float32) / 255.0
+    X_ims=X_ims.astype(np.float32) / 255.0
     
-    factors = factors.T
-    orient_idx = FACTORS_IN_ORDER.index('orientation')
-    y_orien = factors[:, orient_idx]
-   
     elapsed = time.time() - start_time
     print(f"总耗时：{elapsed:.2f}秒")  # 修正f-string
     # return x_ims.reshape(batch_size, 64, 64, 3), y_orien.reshape(batch_size, 1) 重复reshape会导致顺序错乱
-    return x_ims, y_orien
+    return X_ims, y_orien
 
 def calculate_samples_per_bin(bin_data, total_samples):
     bin_counts = {key: len(indices) for key, indices in bin_data.items()}
