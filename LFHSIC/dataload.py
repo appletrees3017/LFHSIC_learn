@@ -61,7 +61,7 @@ def get_index(factors):
     for factor_name in reversed(FACTORS_IN_ORDER[:-1]):
         strides=np.insert(strides,0,strides[0]*NUM_VALUES_PER_FACTOR[factor_name])
     strides.reshape(-1,1)
-    indices=np.sum(factors*stridies,axis=0) #向量化操作
+    indices=np.sum(factors*strides,axis=0) #向量化操作
     return indices
 def get_indices_for_factors(fixed_factor, fixed_factor_value):
     factors_ranges=[]
