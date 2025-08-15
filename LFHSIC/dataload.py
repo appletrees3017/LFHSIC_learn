@@ -87,9 +87,9 @@ def load_3dshapes(batch_size, fixed_factor, fixed_factor_value):
     factors = np.zeros([len(FACTORS_IN_ORDER), batch_size], dtype=np.int32)
     
      # 为非固定因子生成随机值
-    for factor_idx, name in enumerate(_FACTORS_IN_ORDER):
+    for factor_idx, name in enumerate(FACTORS_IN_ORDER):
         if factor_idx != fixed_factor:
-            factors[factor_idx] = np.random.choice(_NUM_VALUES_PER_FACTOR[name], batch_size)
+            factors[factor_idx] = np.random.choice(NUM_VALUES_PER_FACTOR[name], batch_size)
     
     # 设置固定因子的值
     factors[fixed_factor] = fixed_factor_value
