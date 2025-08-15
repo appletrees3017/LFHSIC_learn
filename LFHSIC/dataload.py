@@ -72,7 +72,7 @@ def get_indices_for_factors(fixed_factor, fixed_factor_value):
             factors_ranges.append(list(range(NUM_VALUES_PER_FACTOR[name])))
     all_combinations=list(itertools.product(*factors_ranges))
     factors_matrix=np.array(all_combinations).T
-    indices=get_index(factors)
+    indices=get_index(factors_matrix)
     return indices
      
 def load_3dshapes(batch_size, fixed_factor, fixed_factor_value):
