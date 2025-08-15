@@ -96,7 +96,11 @@ def load_3dshapes(batch_size, fixed_factor, fixed_factor_value):
     
     # 计算索引并获取图像
     indices = get_index(factors)
-    x_ims = np.array(images[indices])  # 转换为数组确保兼容性
+
+    
+    # 计算索引后添加排序操作
+    sorted_indices = np.sort(indices)
+    x_ims = images[sorted_indices] #x_ims = np.array(images[indices])  # 转换为数组确保兼容性
     
     # 归一化并转换类型
     x_ims.astype(np.float32) / 255.0
