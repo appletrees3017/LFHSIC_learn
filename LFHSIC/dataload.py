@@ -57,7 +57,7 @@ def get_index(factors):
     if factors.shape[0] != len(strides):
         raise ValueError(f"因子维度不匹配: 矩阵有{factors.shape[0]}行, " f"但步长数组有{len(strides)}个元素 ")
     # 计算索引: ∑(因子值 × 对应步长)
-return np.sum(factors * strides.reshape(-1, 1), axis=0).astype(np.int64)
+    return np.sum(factors * strides.reshape(-1, 1), axis=0).astype(np.int64)
 
 
 def get_indices_for_factors(fixed_factor, fixed_factor_value):
