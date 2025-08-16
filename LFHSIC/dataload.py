@@ -49,23 +49,45 @@ NUM_VALUES_PER_FACTOR = {
 }
 
 def get_index(factors):
-    """将因子组合转换为数据集索引（修复版）
+    """修正索引计算逻辑"""
+    # 修正步长计算：每个因子的步长 = 后续所有因子取值的乘积
+      strides = np.array([
+          10 * 10 * 8 * 4 * 15,  # floor_hue: 10 * 10 * 8 * 4 * 15 = 48,000
+          10 * 8 * 4 * 15,     # wall_hue: 10 * 8 * 4 * 15 = 4,800
+          8 * 4 * 15,        # object_hue: 8 * 4 * 15 = 480
+          4 * 15,          # scale: 4 * 15 = 60
+          15,            # shape: 15
+          1              # orientation: 1
+      ], dtype=np.int64)
+      
+      # 验证维度匹配
+      if factors.shape[0] != len(strides):
+        raise ValueError(f"因子维度不匹配: 矩阵有{factors.shape[0]}行, " f"但步长数组有{len(strides)}个元素 ")
+        # 计算索引: ∑(因子值 × 对应步长)
+return np.sum(factors * strides.reshape(-1, 1), axis=0).astype(np.int64)
+
+
+def get_indices_for_factors(fixed_factor, fixed_factor_value):
+    """获取固定因子值对应的所有可能索引（修复版）"""
+    # 1. 确保使用正确的全局常量
+    factors_ranges = []
+    for i, name in enumerate(FACTORS_IN_ORDER):  # 使用全局常量名
+        if i == fixed_factor:
+            factors_ranges.append([fixed_factor_value])
+        else:
+            factors_ranges.append(list(range(NUM_VALUES_PER_FACTOR[name])))  # 使用正确的常量名
+
+    # 2. 生成所有组合
+    all_combinations = list(itertools.product(*factors_ranges))
+
+    if not all_combinations:
+      raise ValueError("未生成任何因子组合")
+
+    factors_matrix = np.array(all_combinations).T
     
-    修复了广播错误和步长计算问题
-    """
-    # 1. 正确计算步长数组
-    strides = np.array([1], dtype=np.int64)  # 最后一个因子的步长为1
-    # 倒序计算前5个因子的步长（跳过最后一个因子）
-    for name in reversed(FACTORS_IN_ORDER[:-1]):  # 修正变量名错误
-        new_stride = strides[0] * NUM_VALUES_PER_FACTOR[name]  # 使用全局常量
-        strides = np.insert(strides, 0, new_stride)
-    
-    # 2. 确保正确的广播形状
-    strides = strides.reshape(-1, 1)  # 将形状(6,)变为(6,1)
-    
-    # 3. 正确计算索引
-    indices = np.sum(factors * strides, axis=0)  # 向量化操作
-    return indices.astype(np.int64)
+    # 3. 计算所有索引
+    indices = get_index(factors_matrix)
+    return indices
 
 def get_indices_for_factors(fixed_factor, fixed_factor_value):
     """获取固定因子值对应的所有可能索引（修复版）"""
@@ -116,11 +138,26 @@ def load_3dshapes(batch_size, fixed_factor, fixed_factor_value):
     X_ims = np.array(images[selected_indices])  # 修正数组名拼写错误 (X_imgs -> X_ims)
         
     # 6. 获取标签数据
-    all_labels = np.array(labels[selected_indices])
-        
+    all_labels = np.array(labels[selected_indices])   
     # 7. 提取方位标签
     orientation_index = FACTORS_IN_ORDER.index('orientation')
     y_orien = all_labels[:, orientation_index].astype(np.float32)
+    
+    # 提取所有因子标签（包括形状）
+    factor_labels = {}
+    for i, name in enumerate(FACTORS_IN_ORDER):
+      factor_labels[name] = all_labels[:, i]
+
+    # 验证固定因子是否一致
+    fixed_name = FACTORS_IN_ORDER[fixed_factor]
+    unique_vals = np.unique(factor_labels[fixed_name])
+    if len(unique_vals) > 1 or unique_vals[0] != fixed_factor_value:
+      raise RuntimeError(
+          f"因子{fixed_name}未固定! 期望值: {fixed_factor_value}, "
+          f"实际值: {unique_vals}"
+          )
+    else:
+        print(f"✓ {fixed_name}因子成功固定为值: {fixed_factor_value}")
     
     # 8. 归一化图像数据
     X_ims = X_ims.astype(np.float32) / 255.0
@@ -128,7 +165,7 @@ def load_3dshapes(batch_size, fixed_factor, fixed_factor_value):
     elapsed = time.time() - start_time
     print(f"数据加载耗时：{elapsed:.2f}秒")
     
-    return X_ims, y_orien
+    return X_ims, y_orien,all_labels
 
 def calculate_samples_per_bin(bin_data, total_samples):
     bin_counts = {key: len(indices) for key, indices in bin_data.items()}
