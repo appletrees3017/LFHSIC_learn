@@ -51,14 +51,7 @@ NUM_VALUES_PER_FACTOR = {
 def get_index(factors):
     """修正索引计算逻辑"""
     # 修正步长计算：每个因子的步长 = 后续所有因子取值的乘积
-      strides = np.array([
-          10 * 10 * 8 * 4 * 15,  # floor_hue: 10 * 10 * 8 * 4 * 15 = 48,000
-          10 * 8 * 4 * 15,     # wall_hue: 10 * 8 * 4 * 15 = 4,800
-          8 * 4 * 15,        # object_hue: 8 * 4 * 15 = 480
-          4 * 15,          # scale: 4 * 15 = 60
-          15,            # shape: 15
-          1              # orientation: 1
-      ], dtype=np.int64)
+      strides = np.array([10 * 10 * 8 * 4 * 15,10 * 8 * 4 * 15,8 * 4 * 15,4 * 15,15,1], dtype=np.int64)
       
       # 验证维度匹配
       if factors.shape[0] != len(strides):
