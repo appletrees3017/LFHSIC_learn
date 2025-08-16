@@ -51,12 +51,12 @@ NUM_VALUES_PER_FACTOR = {
 def get_index(factors):
     """修正索引计算逻辑"""
     # 修正步长计算：每个因子的步长 = 后续所有因子取值的乘积
-      strides = np.array([10 * 10 * 8 * 4 * 15,10 * 8 * 4 * 15,8 * 4 * 15,4 * 15,15,1], dtype=np.int64)
+    strides = np.array([10 * 10 * 8 * 4 * 15,10 * 8 * 4 * 15,8 * 4 * 15,4 * 15,15,1], dtype=np.int64)
       
-      # 验证维度匹配
-      if factors.shape[0] != len(strides):
+    # 验证维度匹配
+    if factors.shape[0] != len(strides):
         raise ValueError(f"因子维度不匹配: 矩阵有{factors.shape[0]}行, " f"但步长数组有{len(strides)}个元素 ")
-        # 计算索引: ∑(因子值 × 对应步长)
+    # 计算索引: ∑(因子值 × 对应步长)
 return np.sum(factors * strides.reshape(-1, 1), axis=0).astype(np.int64)
 
 
